@@ -11,6 +11,8 @@
 #include "./Common/d3dApp.h"
 #include "./Common/MathHelper.h"
 #include "./Common/UploadBuffer.h"
+#include "./D3DRHI/DescriptorCacheGPU.h"
+#include "./D3DRHI/DescriptorManager.h"
 
 
 
@@ -56,7 +58,9 @@ private:
     void BuildPSO();
 
 private:
-    
+    std::unique_ptr<DescriptorCacheGPU> m_descriptor_cache = nullptr; // used to bind texture to shader
+    std::unique_ptr<DescriptorManager> m_descriptor_manager = nullptr; // used to create texture srv ...
+
     ComPtr<ID3D12RootSignature> mRootSignature = nullptr;
     ComPtr<ID3D12DescriptorHeap> mCbvHeap = nullptr;
 

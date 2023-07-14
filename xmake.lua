@@ -23,11 +23,11 @@ target("RenderEngineCdh")
     -- add_files("./Engine/*.cpp")
     -- add_headerfiles("./Engine/*.h")
 
-    -- add_files("./Utility/*.cpp")
-    -- add_headerfiles("./Utility/*.h")
+    add_files("./Utility/*.cpp")
+    add_headerfiles("./Utility/*.h")
 
-    -- add_files("./D3DRHI/*.cpp")
-    -- add_headerfiles("./D3DRHI/*.h")
+    add_files("./D3DRHI/*.cpp")
+    add_headerfiles("./D3DRHI/*.h")
 
     after_build(function (target)
         os.cp("./Shaders/*.hlsl", "$(buildir)/Shaders/") -- temp copy to specific dir
