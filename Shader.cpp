@@ -354,7 +354,7 @@ void Shader::CreateRootSignature(ID3D12Device* device)
     {
         m_srv_count += param.bind_count; 
     }
-    CD3DX12_DESCRIPTOR_RANGE srv_table; // do not set this var inside the if{} below, because it must be addressed when create root signature
+    CD3DX12_DESCRIPTOR_RANGE srv_table; // do not set this var inside the if{} below, because it must be addressed when creating root signature
     if(m_srv_count > 0)
     {
         m_srv_signature_bind_slot = root_params.size();
@@ -373,7 +373,7 @@ void Shader::CreateRootSignature(ID3D12Device* device)
     {
         m_uav_count += param.bind_count;
     }
-    CD3DX12_DESCRIPTOR_RANGE uav_table; // do not set this var inside the if{} below, because it must be addressed when create root signature
+    CD3DX12_DESCRIPTOR_RANGE uav_table; // do not set this var inside the if{} below, because it must be addressed when creating root signature
     if(m_uav_count > 0)
     {
         m_uav_signature_bind_slot = root_params.size();

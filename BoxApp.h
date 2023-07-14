@@ -8,7 +8,7 @@
 #include "./D3DRHI/DescriptorManager.h"
 #include "./D3DRHI/D3D12Buffer.h"
 #include "./D3DRHI/PSOManager.h"
-
+#include "./Texture.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -18,6 +18,7 @@ struct Vertex
 {
     XMFLOAT3 Pos;
     XMFLOAT4 Color;
+    XMFLOAT2 TexCoord;
 };
 
 struct ObjectConstants
@@ -49,6 +50,7 @@ private:
     void BuildShadersAndInputLayout();
     void BuildBoxGeometry();
     void BuildPSO();
+    void LoadTexture();
 
 private:
     std::unique_ptr<DescriptorCacheGPU> m_descriptor_cache = nullptr; // used to bind texture to shader
@@ -58,6 +60,7 @@ private:
 
 	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
 
+    std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
 
     std::unique_ptr<Shader> m_shader = nullptr;
 
