@@ -41,6 +41,8 @@ bool BoxApp::Initialize()
     // Wait until initialization is complete.
     FlushCommandQueue();
 
+	m_UploadHeap.Reset();
+
 	return true;
 }
 
@@ -111,7 +113,7 @@ void BoxApp::Draw(const GameTimer& gt)
 
 	mCommandList->SetGraphicsRootSignature(m_shader->m_root_signature.Get());
     m_shader->SetParameter("cbPerObject", m_object_cb.get());
-	m_shader->SetParameter("gDiffuseMap", mTextures["woodCrateTex"]->m_srv.get());
+	m_shader->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
 
 	mCommandList->IASetVertexBuffers(0, 1, &mBoxGeo->VertexBufferView());
 	mCommandList->IASetIndexBuffer(&mBoxGeo->IndexBufferView());
@@ -321,29 +323,25 @@ void BoxApp::BuildPSO()
 
 void BoxApp::LoadTexture()
 {
-	auto woodCrateTex = std::make_unique<Texture>();
-	woodCrateTex->Name = "woodCrateTex";
-	woodCrateTex->Filename = L"../../../Textures/WoodCrate01.dds";
+	// auto woodCrateTex = std::make_unique<Texture>();
+	// woodCrateTex->Name = "woodCrateTex";
+	// woodCrateTex->Filename = L"../../../Textures/WoodCrate01.dds";
 
-	// create committed resource in default heap and upload heap separately, and then copy from upload heap to default heap
-	ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-		mCommandList.Get(), woodCrateTex->Filename.c_str(),
-		woodCrateTex->Resource, woodCrateTex->UploadHeap));
+	// // create committed resource in default heap and upload heap separately, and then copy from upload heap to default heap
+	// // need commit cmdlist
+	// ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
+	// 	mCommandList.Get(), woodCrateTex->Filename.c_str(),
+	// 	woodCrateTex->Resource, m_UploadHeap));
+
+	m_texture_manager.LoadTextureFromFile(md3dDevice.Get(), mCommandList.Get());
+	auto wood_tex = m_texture_manager.GetTexture("woodCrateTex");
 
 	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
 	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = woodCrateTex->Resource->GetDesc().Format;
+	srvDesc.Format = wood_tex->Resource->GetDesc().Format;
 	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
 	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = woodCrateTex->Resource->GetDesc().MipLevels;
+	srvDesc.Texture2D.MipLevels = wood_tex->Resource->GetDesc().MipLevels;
 	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	woodCrateTex->m_srv = std::make_unique<ShaderResourceView>(srvDesc, woodCrateTex->Resource.Get(), md3dDevice.Get(), m_descriptor_manager.get());
-
-
-	//woodCrateTex->srv_slot = m_srv_manager->AllocateDesriptorSlot();
-
-	
-	//md3dDevice->CreateShaderResourceView(woodCrateTex->Resource.Get(), &srvDesc, woodCrateTex->srv_slot.cpu_handle);
-
-	mTextures[woodCrateTex->Name] = std::move(woodCrateTex);
+	wood_tex->m_srv = std::make_unique<ShaderResourceView>(srvDesc, wood_tex->Resource.Get(), md3dDevice.Get(), m_descriptor_manager.get());
 }

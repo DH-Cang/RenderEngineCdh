@@ -1,5 +1,5 @@
 #include "Shader.h"
-#include "./Utility/FormatConvert.h"
+#include "Utility/FormatConvert.h"
 
 void ShaderDefines::GetD3DShaderMacro(std::vector<D3D_SHADER_MACRO> &out_macro) const
 {

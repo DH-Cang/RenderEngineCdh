@@ -1,5 +1,5 @@
 #pragma once
-#include "../Common/d3dUtil.h"
+#include "Common/d3dUtil.h"
 
 
 // this is a non-shader-visible descriptor heap manager

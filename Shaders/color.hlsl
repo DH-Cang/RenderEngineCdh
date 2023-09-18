@@ -46,7 +46,8 @@ VertexOut VS(VertexIn vin)
 float4 PS(VertexOut pin) : SV_Target
 {
     float4 albedo = gDiffuseMap.Sample(gsamLinear, pin.TexCoord);
-    return pin.Color * albedo;
+    // return pin.Color * albedo;
+    return albedo;
 }
 
 

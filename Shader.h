@@ -1,8 +1,8 @@
 #pragma once
-#include "./Common/d3dUtil.h"
-#include "./D3DRHI/ResourceView.h"
-#include "./D3DRHI/D3D12Buffer.h"
-#include "./D3DRHI/DescriptorCacheGPU.h"
+#include "Common/d3dUtil.h"
+#include "D3DRHI/ResourceView.h"
+#include "D3DRHI/D3D12Buffer.h"
+#include "D3DRHI/DescriptorCacheGPU.h"
 #include <string>
 
 using Microsoft::WRL::ComPtr;

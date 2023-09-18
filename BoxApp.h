@@ -1,14 +1,14 @@
 #pragma once
 
-#include "./Shader.h"
-#include "./Common/d3dApp.h"
-#include "./Common/MathHelper.h"
-#include "./Common/UploadBuffer.h"
-#include "./D3DRHI/DescriptorCacheGPU.h"
-#include "./D3DRHI/DescriptorManager.h"
-#include "./D3DRHI/D3D12Buffer.h"
-#include "./D3DRHI/PSOManager.h"
-#include "./Texture.h"
+#include "Shader.h"
+#include "Common/d3dApp.h"
+#include "Common/MathHelper.h"
+#include "Common/UploadBuffer.h"
+#include "D3DRHI/DescriptorCacheGPU.h"
+#include "D3DRHI/DescriptorManager.h"
+#include "D3DRHI/D3D12Buffer.h"
+#include "D3DRHI/PSOManager.h"
+#include "Texture/TextureManager.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -60,7 +60,7 @@ private:
 
 	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
 
-    std::unordered_map<std::string, std::unique_ptr<Texture>> mTextures;
+    TextureManager m_texture_manager;
 
     std::unique_ptr<Shader> m_shader = nullptr;
 
@@ -78,4 +78,6 @@ private:
     float mRadius = 5.0f;
 
     POINT mLastMousePos;
+
+    Microsoft::WRL::ComPtr<ID3D12Resource> m_UploadHeap = nullptr;
 };

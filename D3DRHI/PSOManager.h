@@ -1,7 +1,7 @@
 #pragma once
 #include <string>
 #include <unordered_map>
-#include "../Common/d3dUtil.h"
+#include "Common/d3dUtil.h"
 
 using Microsoft::WRL::ComPtr;
 
