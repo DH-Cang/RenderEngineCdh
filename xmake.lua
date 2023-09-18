@@ -37,7 +37,7 @@ target("RenderEngineCdh")
 
     after_build(function (target)
         os.cp("./Shaders/*.hlsl", "$(buildir)/Shaders/") -- temp copy to specific dir
-        os.cp("./Textures/*.dds", "$(buildir)/Textures/") -- temp copy to specific dir
+        os.cp("./Resources/Textures/*.dds", "$(buildir)/Textures/") -- temp copy to specific dir
     end)
     
 
