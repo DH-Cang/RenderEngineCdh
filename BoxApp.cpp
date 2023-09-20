@@ -8,7 +8,6 @@
 //   Hold the right mouse button down and move the mouse to zoom in and out.
 //***************************************************************************************
 #include "BoxApp.h"
-#include "Mesh/GeometryGenerator.h"
 
 BoxApp::BoxApp(HINSTANCE hInstance)
 : D3DApp(hInstance) 
@@ -43,7 +42,7 @@ bool BoxApp::Initialize()
     FlushCommandQueue();
 
 	m_texture_manager.ReleaseUploadBuffer();
-    m_box_mesh.ReleaseUploadBuffer();
+    m_mesh_manager.ReleaseUploadBuffer();
 
 	return true;
 }
@@ -117,15 +116,15 @@ void BoxApp::Draw(const GameTimer& gt)
     m_shader->SetParameter("cbPerObject", m_object_cb.get());
 	m_shader->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
 
-	mCommandList->IASetVertexBuffers(0, 1, m_box_mesh.GetVertexBufferView());
-	mCommandList->IASetIndexBuffer(m_box_mesh.GetIndexBufferView());
+	mCommandList->IASetVertexBuffers(0, 1, m_mesh_manager.GetMesh("box")->GetVertexBufferView());
+	mCommandList->IASetIndexBuffer(m_mesh_manager.GetMesh("box")->GetIndexBufferView());
     mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
     //mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
     m_shader->BindParameters(mCommandList.Get(), m_descriptor_cache.get());
 
     mCommandList->DrawIndexedInstanced(
-		m_box_mesh.GetIndicesCount(), 
+		m_mesh_manager.GetMesh("box")->GetIndicesCount(), 
 		1, 0, 0, 0);
 	
     // Indicate a state transition on the resource usage.
@@ -148,6 +147,86 @@ void BoxApp::Draw(const GameTimer& gt)
 	// so we do not have to wait per frame.
 	FlushCommandQueue();
 }
+
+void BoxApp::BuildDescriptorHeaps()
+{
+    m_descriptor_manager = std::make_unique<DescriptorManager>(md3dDevice.Get(), 64, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
+    m_descriptor_cache = std::make_unique<DescriptorCacheGPU>(md3dDevice.Get());
+}
+
+void BoxApp::BuildConstantBuffers()
+{
+    m_object_cb = std::make_unique<D3D12ConstantBuffer>(md3dDevice.Get(), sizeof(ObjectConstants));
+}
+
+void BoxApp::BuildShadersAndInputLayout()
+{
+    mInputLayout =
+    {
+        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
+		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
+    };
+
+    ShaderInfo info;
+	info.b_create_VS = true;
+	info.b_create_PS = true;
+	info.file_name = std::string("../../../Shaders/color.hlsl");
+	m_shader = std::make_unique<Shader>(info, md3dDevice.Get());
+}
+
+void BoxApp::BuildBoxGeometry()
+{
+	m_mesh_manager.LoadMeshFromFile(md3dDevice.Get(), mCommandList.Get());
+}
+
+void BoxApp::BuildPSO()
+{
+    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
+    ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
+    psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
+    psoDesc.pRootSignature = m_shader->m_root_signature.Get();
+    psoDesc.VS = 
+	{ 
+		reinterpret_cast<BYTE*>(m_shader->m_shader_stage["VS"]->GetBufferPointer()), 
+		m_shader->m_shader_stage["VS"]->GetBufferSize() 
+	};
+    psoDesc.PS = 
+	{ 
+		reinterpret_cast<BYTE*>(m_shader->m_shader_stage["PS"]->GetBufferPointer()), 
+		m_shader->m_shader_stage["PS"]->GetBufferSize() 
+	};
+    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
+    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
+    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
+    psoDesc.SampleMask = UINT_MAX;
+    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
+    psoDesc.NumRenderTargets = 1;
+    psoDesc.RTVFormats[0] = mBackBufferFormat;
+    psoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
+    psoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
+    psoDesc.DSVFormat = mDepthStencilFormat;
+
+	m_PSO_manager.CreatePSO("commonPSO", psoDesc, md3dDevice.Get());
+}
+
+void BoxApp::LoadTexture()
+{
+	m_texture_manager.LoadTextureFromFile(md3dDevice.Get(), mCommandList.Get());
+	auto wood_tex = m_texture_manager.GetTexture("woodCrateTex");
+
+	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
+	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
+	srvDesc.Format = wood_tex->Resource->GetDesc().Format;
+	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
+	srvDesc.Texture2D.MostDetailedMip = 0;
+	srvDesc.Texture2D.MipLevels = wood_tex->Resource->GetDesc().MipLevels;
+	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
+	wood_tex->m_srv = std::make_unique<ShaderResourceView>(srvDesc, wood_tex->Resource.Get(), md3dDevice.Get(), m_descriptor_manager.get());
+}
+
+
 
 void BoxApp::OnMouseDown(WPARAM btnState, int x, int y)
 {
@@ -192,97 +271,4 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
 
     mLastMousePos.x = x;
     mLastMousePos.y = y;
-}
-
-void BoxApp::BuildDescriptorHeaps()
-{
-    m_descriptor_manager = std::make_unique<DescriptorManager>(md3dDevice.Get(), 64, D3D12_DESCRIPTOR_HEAP_TYPE_CBV_SRV_UAV);
-    m_descriptor_cache = std::make_unique<DescriptorCacheGPU>(md3dDevice.Get());
-}
-
-void BoxApp::BuildConstantBuffers()
-{
-    m_object_cb = std::make_unique<D3D12ConstantBuffer>(md3dDevice.Get(), sizeof(ObjectConstants));
-}
-
-void BoxApp::BuildShadersAndInputLayout()
-{
-    mInputLayout =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-    };
-
-    ShaderInfo info;
-	info.b_create_VS = true;
-	info.b_create_PS = true;
-	info.file_name = std::string("../../../Shaders/color.hlsl");
-	m_shader = std::make_unique<Shader>(info, md3dDevice.Get());
-}
-
-void BoxApp::BuildBoxGeometry()
-{
-	GeometryGenerator geometry_generator;
-	auto box = geometry_generator.CreateBox(2, 2, 2, 0);
-
-    m_box_mesh.SetIndicesCPU(box.GetIndices16());
-    m_box_mesh.SetVerticesCPU(box.Vertices);
-    m_box_mesh.UploadDataToGPU(md3dDevice.Get(), mCommandList.Get());
-}
-
-void BoxApp::BuildPSO()
-{
-    D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
-    ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-    psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
-    psoDesc.pRootSignature = m_shader->m_root_signature.Get();
-    psoDesc.VS = 
-	{ 
-		reinterpret_cast<BYTE*>(m_shader->m_shader_stage["VS"]->GetBufferPointer()), 
-		m_shader->m_shader_stage["VS"]->GetBufferSize() 
-	};
-    psoDesc.PS = 
-	{ 
-		reinterpret_cast<BYTE*>(m_shader->m_shader_stage["PS"]->GetBufferPointer()), 
-		m_shader->m_shader_stage["PS"]->GetBufferSize() 
-	};
-    psoDesc.RasterizerState = CD3DX12_RASTERIZER_DESC(D3D12_DEFAULT);
-    psoDesc.BlendState = CD3DX12_BLEND_DESC(D3D12_DEFAULT);
-    psoDesc.DepthStencilState = CD3DX12_DEPTH_STENCIL_DESC(D3D12_DEFAULT);
-    psoDesc.SampleMask = UINT_MAX;
-    psoDesc.PrimitiveTopologyType = D3D12_PRIMITIVE_TOPOLOGY_TYPE_TRIANGLE;
-    psoDesc.NumRenderTargets = 1;
-    psoDesc.RTVFormats[0] = mBackBufferFormat;
-    psoDesc.SampleDesc.Count = m4xMsaaState ? 4 : 1;
-    psoDesc.SampleDesc.Quality = m4xMsaaState ? (m4xMsaaQuality - 1) : 0;
-    psoDesc.DSVFormat = mDepthStencilFormat;
-
-	m_PSO_manager.CreatePSO("commonPSO", psoDesc, md3dDevice.Get());
-}
-
-void BoxApp::LoadTexture()
-{
-	// auto woodCrateTex = std::make_unique<Texture>();
-	// woodCrateTex->Name = "woodCrateTex";
-	// woodCrateTex->Filename = L"../../../Textures/WoodCrate01.dds";
-
-	// // create committed resource in default heap and upload heap separately, and then copy from upload heap to default heap
-	// // need commit cmdlist
-	// ThrowIfFailed(DirectX::CreateDDSTextureFromFile12(md3dDevice.Get(),
-	// 	mCommandList.Get(), woodCrateTex->Filename.c_str(),
-	// 	woodCrateTex->Resource, m_UploadHeap));
-
-	m_texture_manager.LoadTextureFromFile(md3dDevice.Get(), mCommandList.Get());
-	auto wood_tex = m_texture_manager.GetTexture("woodCrateTex");
-
-	D3D12_SHADER_RESOURCE_VIEW_DESC srvDesc = {};
-	srvDesc.Shader4ComponentMapping = D3D12_DEFAULT_SHADER_4_COMPONENT_MAPPING;
-	srvDesc.Format = wood_tex->Resource->GetDesc().Format;
-	srvDesc.ViewDimension = D3D12_SRV_DIMENSION_TEXTURE2D;
-	srvDesc.Texture2D.MostDetailedMip = 0;
-	srvDesc.Texture2D.MipLevels = wood_tex->Resource->GetDesc().MipLevels;
-	srvDesc.Texture2D.ResourceMinLODClamp = 0.0f;
-	wood_tex->m_srv = std::make_unique<ShaderResourceView>(srvDesc, wood_tex->Resource.Get(), md3dDevice.Get(), m_descriptor_manager.get());
 }
