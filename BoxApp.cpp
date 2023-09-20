@@ -43,6 +43,7 @@ bool BoxApp::Initialize()
     FlushCommandQueue();
 
 	m_texture_manager.ReleaseUploadBuffer();
+    m_box_mesh.ReleaseUploadBuffer();
 
 	return true;
 }
@@ -116,15 +117,15 @@ void BoxApp::Draw(const GameTimer& gt)
     m_shader->SetParameter("cbPerObject", m_object_cb.get());
 	m_shader->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
 
-	mCommandList->IASetVertexBuffers(0, 1, &mBoxGeo->VertexBufferView());
-	mCommandList->IASetIndexBuffer(&mBoxGeo->IndexBufferView());
+	mCommandList->IASetVertexBuffers(0, 1, m_box_mesh.GetVertexBufferView());
+	mCommandList->IASetIndexBuffer(m_box_mesh.GetIndexBufferView());
     mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
     //mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
     m_shader->BindParameters(mCommandList.Get(), m_descriptor_cache.get());
 
     mCommandList->DrawIndexedInstanced(
-		mBoxGeo->DrawArgs["box"].IndexCount, 
+		m_box_mesh.GetIndicesCount(), 
 		1, 0, 0, 0);
 	
     // Indicate a state transition on the resource usage.
@@ -226,39 +227,9 @@ void BoxApp::BuildBoxGeometry()
 	GeometryGenerator geometry_generator;
 	auto box = geometry_generator.CreateBox(2, 2, 2, 0);
 
-	std::vector<Vertex> vertices_new(box.Vertices);
-	std::vector<std::uint16_t> indices_new(box.GetIndices16());
-	
-    const UINT vbByteSize = (UINT)vertices_new.size() * sizeof(Vertex);
-	const UINT ibByteSize = (UINT)indices_new.size() * sizeof(std::uint16_t);
-
-	mBoxGeo = std::make_unique<MeshGeometry>();
-	mBoxGeo->Name = "boxGeo";
-
-
-	mBoxGeo->VertexBufferGPU.UploadData( md3dDevice.Get(),
-		mCommandList.Get(),
-		vbByteSize,
-		vertices_new.data()
-	);
-
-	mBoxGeo->IndexBufferGPU.UploadData( md3dDevice.Get(),
-		mCommandList.Get(),
-		ibByteSize,
-		indices_new.data()
-	);
-
-	mBoxGeo->VertexByteStride = sizeof(Vertex);
-	mBoxGeo->VertexBufferByteSize = vbByteSize;
-	mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
-	mBoxGeo->IndexBufferByteSize = ibByteSize;
-
-	SubmeshGeometry submesh;
-	submesh.IndexCount = (UINT)indices_new.size();
-	submesh.StartIndexLocation = 0;
-	submesh.BaseVertexLocation = 0;
-
-	mBoxGeo->DrawArgs["box"] = submesh;
+    m_box_mesh.SetIndicesCPU(box.GetIndices16());
+    m_box_mesh.SetVerticesCPU(box.Vertices);
+    m_box_mesh.UploadDataToGPU(md3dDevice.Get(), mCommandList.Get());
 }
 
 void BoxApp::BuildPSO()

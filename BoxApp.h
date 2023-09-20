@@ -9,6 +9,7 @@
 #include "D3DRHI/D3D12Buffer.h"
 #include "D3DRHI/PSOManager.h"
 #include "Texture/TextureManager.h"
+#include "Mesh/Mesh.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -109,9 +110,8 @@ private:
 
     std::unique_ptr<D3D12ConstantBuffer> m_object_cb = nullptr;
 
-	std::unique_ptr<MeshGeometry> mBoxGeo = nullptr;
-
     TextureManager m_texture_manager;
+	Mesh m_box_mesh;
 
     std::unique_ptr<Shader> m_shader = nullptr;
 
