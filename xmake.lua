@@ -35,6 +35,9 @@ target("RenderEngineCdh")
     add_files("./Texture/*.cpp")
     add_headerfiles("./Texture/*.h")
 
+    add_files("./Mesh/*.cpp")
+    add_headerfiles("./Mesh/*.h")
+
     after_build(function (target)
         os.cp("./Shaders/*.hlsl", "$(buildir)/Shaders/") -- temp copy to specific dir
         os.cp("./Resources/Textures/*.dds", "$(buildir)/Textures/") -- temp copy to specific dir

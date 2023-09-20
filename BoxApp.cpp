@@ -41,7 +41,7 @@ bool BoxApp::Initialize()
     // Wait until initialization is complete.
     FlushCommandQueue();
 
-	m_UploadHeap.Reset();
+	m_texture_manager.ReleaseUploadBuffer();
 
 	return true;
 }
@@ -266,18 +266,19 @@ void BoxApp::BuildBoxGeometry()
 	mBoxGeo = std::make_unique<MeshGeometry>();
 	mBoxGeo->Name = "boxGeo";
 
-	ThrowIfFailed(D3DCreateBlob(vbByteSize, &mBoxGeo->VertexBufferCPU));
-	CopyMemory(mBoxGeo->VertexBufferCPU->GetBufferPointer(), vertices.data(), vbByteSize);
 
-	ThrowIfFailed(D3DCreateBlob(ibByteSize, &mBoxGeo->IndexBufferCPU));
-	CopyMemory(mBoxGeo->IndexBufferCPU->GetBufferPointer(), indices.data(), ibByteSize);
+	mBoxGeo->VertexBufferGPU.UploadData( md3dDevice.Get(),
+		mCommandList.Get(),
+		vbByteSize,
+		vertices.data()
+	);
 
-	mBoxGeo->VertexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), vertices.data(), vbByteSize, mBoxGeo->VertexBufferUploader);
-
-	mBoxGeo->IndexBufferGPU = d3dUtil::CreateDefaultBuffer(md3dDevice.Get(),
-		mCommandList.Get(), indices.data(), ibByteSize, mBoxGeo->IndexBufferUploader);
-
+	mBoxGeo->IndexBufferGPU.UploadData( md3dDevice.Get(),
+		mCommandList.Get(),
+		ibByteSize,
+		indices.data()
+	);
+	
 	mBoxGeo->VertexByteStride = sizeof(Vertex);
 	mBoxGeo->VertexBufferByteSize = vbByteSize;
 	mBoxGeo->IndexFormat = DXGI_FORMAT_R16_UINT;
