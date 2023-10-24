@@ -1,0 +1,7 @@
+# RenderEngineCdh
+
+## Build
+
+```
+xmake -w
+```
