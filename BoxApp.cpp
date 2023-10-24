@@ -27,7 +27,7 @@ bool BoxApp::Initialize()
     ThrowIfFailed(mCommandList->Reset(mDirectCmdListAlloc.Get(), nullptr));
  
     BuildDescriptorHeaps();
-	BuildConstantBuffers();
+	BuildMaterials();
     BuildShadersAndInputLayout();
     BuildBoxGeometry();
     BuildPSO();
@@ -43,6 +43,8 @@ bool BoxApp::Initialize()
 
 	m_texture_manager.ReleaseUploadBuffer();
     m_mesh_manager.ReleaseUploadBuffer();
+    m_material->SetShader(m_shader.get());
+    m_material->CreateCb(md3dDevice.Get());
 
 	return true;
 }
@@ -78,8 +80,10 @@ void BoxApp::Update(const GameTimer& gt)
 	// Update the constant buffer with the latest worldViewProj matrix.
 	ObjectConstants objConstants;
     XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
-    m_object_cb->CopyData(&objConstants, sizeof(ObjectConstants));
-    //mObjectCB->CopyData(0, objConstants);
+    //m_object_cb->CopyData(&objConstants, sizeof(ObjectConstants));
+
+    m_material->SetParameter("gWorldViewProj", objConstants.WorldViewProj);
+    m_material->UpdateCb();
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -112,16 +116,14 @@ void BoxApp::Draw(const GameTimer& gt)
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_descriptor_cache->GetCachedCbvSrvUavDescriptorHeap() };
 	mCommandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-	mCommandList->SetGraphicsRootSignature(m_shader->m_root_signature.Get());
-    m_shader->SetParameter("cbPerObject", m_object_cb.get());
-	m_shader->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
-
+	mCommandList->SetGraphicsRootSignature(m_material->GetRootSignature());
+    
 	mCommandList->IASetVertexBuffers(0, 1, m_mesh_manager.GetMesh("box")->GetVertexBufferView());
 	mCommandList->IASetIndexBuffer(m_mesh_manager.GetMesh("box")->GetIndexBufferView());
     mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
-    //mCommandList->SetGraphicsRootDescriptorTable(0, mCbvHeap->GetGPUDescriptorHandleForHeapStart());
-    m_shader->BindParameters(mCommandList.Get(), m_descriptor_cache.get());
+    m_material->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
+    m_material->BindParameters(mCommandList.Get(), m_descriptor_cache.get());
 
     mCommandList->DrawIndexedInstanced(
 		m_mesh_manager.GetMesh("box")->GetIndicesCount(), 
@@ -154,9 +156,9 @@ void BoxApp::BuildDescriptorHeaps()
     m_descriptor_cache = std::make_unique<DescriptorCacheGPU>(md3dDevice.Get());
 }
 
-void BoxApp::BuildConstantBuffers()
+void BoxApp::BuildMaterials()
 {
-    m_object_cb = std::make_unique<D3D12ConstantBuffer>(md3dDevice.Get(), sizeof(ObjectConstants));
+    m_material = std::make_unique<Material>();
 }
 
 void BoxApp::BuildShadersAndInputLayout()

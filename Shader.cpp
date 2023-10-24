@@ -196,13 +196,34 @@ void Shader::GetShaderParameters(ComPtr<ID3DBlob> blob, ShaderType shader_type)
 
         if (resource_type == D3D_SHADER_INPUT_TYPE::D3D_SIT_CBUFFER)
 		{
+            // create cbv parameter
 			ShaderCBVParameter param;
 			param.name = shader_var_name;
 			param.shader_type = shader_type;
 			param.bind_point = bind_point;
 			param.register_space = register_space;
-
 			m_cbv_params.push_back(param);
+
+            // store constant buffer structure
+            auto cb = reflection->GetConstantBufferByName(shader_var_name);
+            D3D12_SHADER_BUFFER_DESC cb_desc;
+            cb->GetDesc(&cb_desc);
+            auto num_vars = cb_desc.Variables;
+            std::vector<ConstantBufferAttribute> attributes(num_vars);
+            for(int j=0; j<num_vars; j++)
+            {
+                auto var = cb->GetVariableByIndex(j);
+                D3D12_SHADER_VARIABLE_DESC var_desc;
+                D3D12_SHADER_TYPE_DESC var_type_desc;
+                var->GetDesc(&var_desc);
+                var->GetType()->GetDesc(&var_type_desc);
+
+                attributes[j].name = var_desc.Name;
+                attributes[j].offset = var_desc.StartOffset;
+                attributes[j].size = var_desc.Size;
+                attributes[j].type = var_type_desc.Name;
+            }
+            m_cb_structure_map[param.name] = attributes;
 		}
 		else if (resource_type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
 			  || resource_type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE)
@@ -498,6 +519,13 @@ void Shader::BindParameters(ID3D12GraphicsCommandList* cmd_list, DescriptorCache
     }
     
     ClearBindings();
+}
+
+const std::vector<ConstantBufferAttribute> &Shader::GetCbStructure(const std::string &cb_name)
+{
+    const auto& iter = m_cb_structure_map.find(cb_name);
+    assert(iter != m_cb_structure_map.end());
+    return iter->second;
 }
 
 void Shader::CheckBindings()

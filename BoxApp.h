@@ -10,6 +10,7 @@
 #include "D3DRHI/PSOManager.h"
 #include "Texture/TextureManager.h"
 #include "Mesh/MeshManager.h"
+#include "Material/Material.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -18,63 +19,6 @@ using namespace DirectX::PackedVector;
 struct ObjectConstants
 {
     XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
-};
-
-
-
-struct MeshGeometry
-{
-	// Give it a name so we can look it up by name.
-	std::string Name;
-
-	// System memory copies.  Use Blobs because the vertex/index format can be generic.
-	// It is up to the client to cast appropriately.  
-	// Microsoft::WRL::ComPtr<ID3DBlob> VertexBufferCPU = nullptr;
-	// Microsoft::WRL::ComPtr<ID3DBlob> IndexBufferCPU  = nullptr;
-
-	D3D12VertexBuffer VertexBufferGPU;
-	D3D12IndexBuffer IndexBufferGPU;
-
-	Microsoft::WRL::ComPtr<ID3D12Resource> VertexBufferUploader = nullptr;
-	Microsoft::WRL::ComPtr<ID3D12Resource> IndexBufferUploader = nullptr;
-
-    // Data about the buffers.
-	UINT VertexByteStride = 0;
-	UINT VertexBufferByteSize = 0;
-	DXGI_FORMAT IndexFormat = DXGI_FORMAT_R16_UINT;
-	UINT IndexBufferByteSize = 0;
-
-	// A MeshGeometry may store multiple geometries in one vertex/index buffer.
-	// Use this container to define the Submesh geometries so we can draw
-	// the Submeshes individually.
-	std::unordered_map<std::string, SubmeshGeometry> DrawArgs;
-
-	D3D12_VERTEX_BUFFER_VIEW VertexBufferView()const
-	{
-		D3D12_VERTEX_BUFFER_VIEW vbv;
-		vbv.BufferLocation = VertexBufferGPU.GetResource()->GetGPUVirtualAddress();
-		vbv.StrideInBytes = VertexByteStride;
-		vbv.SizeInBytes = VertexBufferByteSize;
-
-		return vbv;
-	}
-
-	D3D12_INDEX_BUFFER_VIEW IndexBufferView()const
-	{
-		D3D12_INDEX_BUFFER_VIEW ibv;
-		ibv.BufferLocation = IndexBufferGPU.GetResource()->GetGPUVirtualAddress();
-		ibv.Format = IndexFormat;
-		ibv.SizeInBytes = IndexBufferByteSize;
-
-		return ibv;
-	}
-
-	// We can free this memory after we finish upload to the GPU.
-	void DisposeUploaders()
-	{
-		VertexBufferUploader = nullptr;
-		IndexBufferUploader = nullptr;
-	}
 };
 
 
@@ -98,7 +42,7 @@ private:
     virtual void OnMouseMove(WPARAM btnState, int x, int y)override;
 
     void BuildDescriptorHeaps();
-	void BuildConstantBuffers();
+	void BuildMaterials();
     void BuildShadersAndInputLayout();
     void BuildBoxGeometry();
     void BuildPSO();
@@ -108,11 +52,10 @@ private:
     std::unique_ptr<DescriptorCacheGPU> m_descriptor_cache = nullptr; // used to bind texture to shader
     std::unique_ptr<DescriptorManager> m_descriptor_manager = nullptr; // used to create texture srv ...
 
-    std::unique_ptr<D3D12ConstantBuffer> m_object_cb = nullptr;
+	std::unique_ptr<Material> m_material = nullptr;
 
     TextureManager m_texture_manager;
 	MeshManager m_mesh_manager;
-	//Mesh m_box_mesh;
 
     std::unique_ptr<Shader> m_shader = nullptr;
 

@@ -2,6 +2,8 @@ add_rules("plugin.compile_commands.autoupdate", {outputdir = ".vscode"}) -- upda
 
 add_rules("mode.debug", "mode.release")
 
+set_languages("c99", "cxx17")
+
 add_defines("_WINDOWS")
 add_defines("UNICODE")
 add_defines("_UNICODE")
@@ -37,6 +39,9 @@ target("RenderEngineCdh")
 
     add_files("./Mesh/*.cpp")
     add_headerfiles("./Mesh/*.h")
+
+    add_files("./Material/*.cpp")
+    add_headerfiles("./Material/*.h")
 
     after_build(function (target)
         os.cp("./Shaders/*.hlsl", "$(buildir)/Shaders/") -- temp copy to specific dir

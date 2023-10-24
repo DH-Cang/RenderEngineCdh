@@ -4,7 +4,6 @@
 #include "D3DRHI/D3D12Buffer.h"
 #include "D3DRHI/DescriptorCacheGPU.h"
 #include <string>
-
 using Microsoft::WRL::ComPtr;
 
 
@@ -107,6 +106,13 @@ struct ShaderInfo
 };
 
 
+struct ConstantBufferAttribute
+{
+	std::string type;
+	std::string name;
+	unsigned int offset;
+	unsigned int size;
+};
 
 class Shader
 {
@@ -121,6 +127,7 @@ public:
 	bool SetParameter(std::string param_name, UnorderedAccessView* uav);
 	bool SetParameter(std::string param_name, const std::vector<UnorderedAccessView*>& uav_list);
 	void BindParameters(ID3D12GraphicsCommandList* cmd_list, DescriptorCacheGPU* descriptor_cache);
+	const std::vector<ConstantBufferAttribute>& GetCbStructure(const std::string& cb_name);
 
 private:
 	static Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& Filename, const D3D_SHADER_MACRO* Defines, const std::string& Entrypoint, const std::string& Target);
@@ -158,5 +165,5 @@ private:
 
 	int m_sampler_signature_bind_slot = -1;
 
-	
+	std::unordered_map<std::string, std::vector<ConstantBufferAttribute>> m_cb_structure_map;
 };
