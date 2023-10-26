@@ -17,6 +17,10 @@ end
 
 target("RenderEngineCdh")
     set_kind("binary")
+
+    -- search include file in current dir
+    add_includedirs(".")
+
     add_files("./*.cpp")
     add_files("./Common/*.cpp")
     add_headerfiles("./*.h")
@@ -25,14 +29,11 @@ target("RenderEngineCdh")
     -- add_files("./Engine/*.cpp")
     -- add_headerfiles("./Engine/*.h")
 
-    add_files("./Utility/*.cpp")
+    -- add_files("./Utility/*.cpp")
     add_headerfiles("./Utility/*.h")
 
     add_files("D3DRHI/*.cpp")
     add_headerfiles("D3DRHI/*.h")
-
-    -- search include file in current dir
-    add_includedirs(".")
 
     add_files("./Texture/*.cpp")
     add_headerfiles("./Texture/*.h")
@@ -42,6 +43,9 @@ target("RenderEngineCdh")
 
     add_files("./Material/*.cpp")
     add_headerfiles("./Material/*.h")
+
+    add_files("./Math/*.cpp")
+    add_headerfiles("./Math/*.h")
 
     after_build(function (target)
         os.cp("./Shaders/*.hlsl", "$(buildir)/Shaders/") -- temp copy to specific dir

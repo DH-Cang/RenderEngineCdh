@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Shader.h"
+
 #include "Common/d3dApp.h"
-#include "Common/MathHelper.h"
+#include "Math/MathHelper.h"
 #include "Common/UploadBuffer.h"
 #include "D3DRHI/DescriptorCacheGPU.h"
 #include "D3DRHI/DescriptorManager.h"

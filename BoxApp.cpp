@@ -66,13 +66,15 @@ void BoxApp::Update(const GameTimer& gt)
     float y = mRadius*cosf(mPhi);
 
     // Build the view matrix.
+    // left hand camera coord
     XMVECTOR pos = XMVectorSet(x, y, z, 1.0f);
     XMVECTOR target = XMVectorZero();
     XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
 
-    XMMATRIX view = XMMatrixLookAtLH(pos, target, up);
+    XMMATRIX view = XMMatrixLookAtLH(pos, target, up); // this matrix is designed for postmultiplying : pos * view, thus it pass a transposed ViewMatrix to GPU
     XMStoreFloat4x4(&mView, view);
 
+    // right hand world coord
     XMMATRIX world = XMLoadFloat4x4(&mWorld);
     XMMATRIX proj = XMLoadFloat4x4(&mProj);
     XMMATRIX worldViewProj = world*view*proj;
