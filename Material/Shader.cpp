@@ -518,7 +518,7 @@ void Shader::BindParameters(ID3D12GraphicsCommandList* cmd_list, DescriptorCache
         }
     }
     
-    ClearBindings();
+    // ClearBindings();
 }
 
 const std::vector<ConstantBufferAttribute> &Shader::GetCbStructure(const std::string &cb_name)

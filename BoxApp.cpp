@@ -43,8 +43,9 @@ bool BoxApp::Initialize()
 
 	m_texture_manager.ReleaseUploadBuffer();
     m_mesh_manager.ReleaseUploadBuffer();
-    m_material->SetShader(m_shader.get());
-    m_material->CreateCb(md3dDevice.Get());
+    
+    SetMaterial();
+    SetGameObject();
 
 	return true;
 }
@@ -85,7 +86,6 @@ void BoxApp::Update(const GameTimer& gt)
     //m_object_cb->CopyData(&objConstants, sizeof(ObjectConstants));
 
     m_material->SetParameter("gWorldViewProj", objConstants.WorldViewProj);
-    m_material->UpdateCb();
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -118,18 +118,8 @@ void BoxApp::Draw(const GameTimer& gt)
 	ID3D12DescriptorHeap* descriptorHeaps[] = { m_descriptor_cache->GetCachedCbvSrvUavDescriptorHeap() };
 	mCommandList->SetDescriptorHeaps(1, descriptorHeaps);
 
-	mCommandList->SetGraphicsRootSignature(m_material->GetRootSignature());
-    
-	mCommandList->IASetVertexBuffers(0, 1, m_mesh_manager.GetMesh("box")->GetVertexBufferView());
-	mCommandList->IASetIndexBuffer(m_mesh_manager.GetMesh("box")->GetIndexBufferView());
-    mCommandList->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-    
-    m_material->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
-    m_material->BindParameters(mCommandList.Get(), m_descriptor_cache.get());
-
-    mCommandList->DrawIndexedInstanced(
-		m_mesh_manager.GetMesh("box")->GetIndicesCount(), 
-		1, 0, 0, 0);
+    // Draw
+    m_chest_go->Draw(mCommandList.Get(), m_descriptor_cache.get());
 	
     // Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),
@@ -230,7 +220,19 @@ void BoxApp::LoadTexture()
 	wood_tex->m_srv = std::make_unique<ShaderResourceView>(srvDesc, wood_tex->Resource.Get(), md3dDevice.Get(), m_descriptor_manager.get());
 }
 
+void BoxApp::SetMaterial()
+{   
+    m_material->SetShader(m_shader.get());
+    m_material->CreateCb(md3dDevice.Get());
+    m_material->SetParameter("gDiffuseMap", m_texture_manager.GetTexture("woodCrateTex")->m_srv.get());
+}
 
+void BoxApp::SetGameObject()
+{
+    m_chest_go = std::make_unique<ModelGameObject>(std::string("chest"));
+    m_chest_go->SetMaterial(m_material.get());
+    m_chest_go->SetMesh(m_mesh_manager.GetMesh("box"));
+}
 
 void BoxApp::OnMouseDown(WPARAM btnState, int x, int y)
 {

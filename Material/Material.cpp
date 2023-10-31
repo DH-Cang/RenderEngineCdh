@@ -39,11 +39,13 @@ void Material::CreateCb(ID3D12Device *device)
 void Material::UpdateCb()
 {
     m_cb_per_object->CopyData(m_mapped_data.data(), m_cb_size);
-    m_shader->SetParameter("cbPerObject", m_cb_per_object.get());
+    bool result = m_shader->SetParameter("cbPerObject", m_cb_per_object.get());
+    assert(result == true);
 }
 
-void Material::BindParameters(ID3D12GraphicsCommandList *cmd_list, DescriptorCacheGPU *descriptor_cache)
+void Material::PassParametersToShader(ID3D12GraphicsCommandList *cmd_list, DescriptorCacheGPU *descriptor_cache)
 {
+    UpdateCb();
     m_shader->BindParameters(cmd_list, descriptor_cache);
 }
 

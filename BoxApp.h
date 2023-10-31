@@ -11,6 +11,8 @@
 #include "Texture/TextureManager.h"
 #include "Mesh/MeshManager.h"
 #include "Material/Material.h"
+#include "Component/Component.h"
+#include "GameObject/ModelGameObject.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
@@ -48,6 +50,9 @@ private:
     void BuildPSO();
     void LoadTexture();
 
+    void SetMaterial();
+    void SetGameObject();
+
 private:
     std::unique_ptr<DescriptorCacheGPU> m_descriptor_cache = nullptr; // used to bind texture to shader
     std::unique_ptr<DescriptorManager> m_descriptor_manager = nullptr; // used to create texture srv ...
@@ -58,6 +63,8 @@ private:
 	MeshManager m_mesh_manager;
 
     std::unique_ptr<Shader> m_shader = nullptr;
+
+    std::unique_ptr<ModelGameObject> m_chest_go;
 
     std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 

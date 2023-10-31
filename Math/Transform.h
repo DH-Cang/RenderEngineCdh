@@ -22,6 +22,11 @@ struct Rotator
 class Transform
 {
 public:
+	Vector3 Location;
+	Rotator Rotation;
+	Vector3 Scale;
+
+public:
 	Transform()
 	{
 		Location = Vector3::Zero;
@@ -32,7 +37,7 @@ public:
 	Matrix GetTransformMatrixLH() const
 	{
 		Matrix S = Matrix::CreateScale(Scale);
-		Matrix R = Matrix::CreateFromYawPitchRoll(DegreesToRadians(Rotation.Yaw), DegreesToRadians(Rotation.Pitch), DegreesToRadians(Rotation.Roll));
+		Matrix R = Matrix::CreateFromYawPitchRoll(Math::DegreesToRadians(Rotation.Yaw), Math::DegreesToRadians(Rotation.Pitch), Math::DegreesToRadians(Rotation.Roll));
 		Matrix T = Matrix::CreateTranslation(Location);
 
 		return S * R * T;
@@ -42,9 +47,4 @@ public:
     {
         return GetTransformMatrixLH().Transpose();
     }
-
-public:
-	Vector3 Location;
-	Rotator Rotation;
-	Vector3 Scale;
 };

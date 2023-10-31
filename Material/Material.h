@@ -25,8 +25,10 @@ public:
 
     void SetParameter(const std::string& name, DirectX::XMFLOAT4X4 data);
     void SetParameter(const std::string& name, ShaderResourceView *srv);
+    void PassParametersToShader(ID3D12GraphicsCommandList* cmd_list, DescriptorCacheGPU* descriptor_cache);
+
+private:
     void UpdateCb();
-    void BindParameters(ID3D12GraphicsCommandList* cmd_list, DescriptorCacheGPU* descriptor_cache);
 
 private:
     struct VariableAttribute
