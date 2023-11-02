@@ -8,6 +8,7 @@ void ModelGameObject::Draw(ID3D12GraphicsCommandList *cmd_list, DescriptorCacheG
     cmd_list->IASetIndexBuffer(m_mesh->GetIndexBufferView());
     cmd_list->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
     
+    // update shader data
     m_material->PassParametersToShader(cmd_list, descriptor_cache);
 
     cmd_list->DrawIndexedInstanced(

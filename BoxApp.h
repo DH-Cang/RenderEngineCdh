@@ -13,16 +13,11 @@
 #include "Material/Material.h"
 #include "Component/Component.h"
 #include "GameObject/ModelGameObject.h"
+#include "GameObject/CameraGameObject.h"
 
 using Microsoft::WRL::ComPtr;
 using namespace DirectX;
 using namespace DirectX::PackedVector;
-
-struct ObjectConstants
-{
-    XMFLOAT4X4 WorldViewProj = MathHelper::Identity4x4();
-};
-
 
 class BoxApp : public D3DApp
 {
@@ -65,8 +60,9 @@ private:
     std::unique_ptr<Shader> m_shader = nullptr;
 
     std::unique_ptr<ModelGameObject> m_chest_go;
+    std::unique_ptr<CameraGameObject> m_camera;
 
-    std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
+    //std::vector<D3D12_INPUT_ELEMENT_DESC> mInputLayout;
 
     //ComPtr<ID3D12PipelineState> mPSO = nullptr;
     PSOManager m_PSO_manager;

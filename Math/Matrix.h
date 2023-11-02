@@ -17,7 +17,7 @@
 #include "Vector3.h"
 #include "Vector4.h"
 
-// 4x4 Matrix (use left-handed cooordinates !!!)
+// 4x4 Matrix using left hand coord
 struct Matrix : public DirectX::XMFLOAT4X4
 {
 	Matrix() noexcept

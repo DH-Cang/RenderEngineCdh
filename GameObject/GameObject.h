@@ -8,7 +8,11 @@
 class GameObject
 {
 public:
-	GameObject(const std::string& Name): m_name(Name) {}
+	GameObject(const std::string& Name): m_name(Name) 
+	{ 
+		m_components.push_back(std::make_unique<Component>());
+		m_root_component = m_components[0].get();
+	}
 	GameObject() = delete;
 
 	virtual ~GameObject() {}
@@ -61,10 +65,12 @@ public:
 	Transform GetGameObjectTransform() const;
 
 	void SetGameObjectLocation(const Vector3& new_location);
+	void SetGameObjectLocation(const float x, const float y, const float z);
 
 	Vector3 GetGameObjectLocation() const;
 
 	void SetGameObjectRotation(const Rotator& new_rotator);
+	void SetGameObjectRotation(const float roll, const float pitch, const float yaw);
 
 	Rotator GetGameObjectRotation() const;
 

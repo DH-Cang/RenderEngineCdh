@@ -61,31 +61,14 @@ void BoxApp::OnResize()
 
 void BoxApp::Update(const GameTimer& gt)
 {
-    // Convert Spherical to Cartesian coordinates.
-    float x = mRadius*sinf(mPhi)*cosf(mTheta);
-    float z = mRadius*sinf(mPhi)*sinf(mTheta);
-    float y = mRadius*cosf(mPhi);
+    Rotator rotate;
+    m_chest_go->SetGameObjectRotation(Math::RadiansToDegrees(mPhi), 0, Math::RadiansToDegrees(mTheta));
 
-    // Build the view matrix.
-    // left hand camera coord
-    XMVECTOR pos = XMVectorSet(x, y, z, 1.0f);
-    XMVECTOR target = XMVectorZero();
-    XMVECTOR up = XMVectorSet(0.0f, 1.0f, 0.0f, 0.0f);
-
-    XMMATRIX view = XMMatrixLookAtLH(pos, target, up); // this matrix is designed for postmultiplying : pos * view, thus it pass a transposed ViewMatrix to GPU
-    XMStoreFloat4x4(&mView, view);
-
-    // right hand world coord
-    XMMATRIX world = XMLoadFloat4x4(&mWorld);
-    XMMATRIX proj = XMLoadFloat4x4(&mProj);
-    XMMATRIX worldViewProj = world*view*proj;
-
-	// Update the constant buffer with the latest worldViewProj matrix.
-	ObjectConstants objConstants;
-    XMStoreFloat4x4(&objConstants.WorldViewProj, XMMatrixTranspose(worldViewProj));
-    //m_object_cb->CopyData(&objConstants, sizeof(ObjectConstants));
-
-    m_material->SetParameter("gWorldViewProj", objConstants.WorldViewProj);
+    // this matrix class is designed for postmultiplying : pos * view, thus it should pass a transposed ViewMatrix to GPU
+    Matrix worldmatrix = m_chest_go->GetGameObjectTransform().GetTransformMatrixLH();
+    Matrix viewmatrix = m_camera->GetViewMatrix();
+    Matrix projmatrix = m_camera->GetProjMatrix();
+    m_material->SetParameter("gWorldViewProj", (worldmatrix * viewmatrix * projmatrix).Transpose());
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -155,14 +138,6 @@ void BoxApp::BuildMaterials()
 
 void BoxApp::BuildShadersAndInputLayout()
 {
-    mInputLayout =
-    {
-        { "POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-        { "NORMAL", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 12, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TANGENT", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 24, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 },
-		{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 36, D3D12_INPUT_CLASSIFICATION_PER_VERTEX_DATA, 0 }
-    };
-
     ShaderInfo info;
 	info.b_create_VS = true;
 	info.b_create_PS = true;
@@ -179,7 +154,8 @@ void BoxApp::BuildPSO()
 {
     D3D12_GRAPHICS_PIPELINE_STATE_DESC psoDesc;
     ZeroMemory(&psoDesc, sizeof(D3D12_GRAPHICS_PIPELINE_STATE_DESC));
-    psoDesc.InputLayout = { mInputLayout.data(), (UINT)mInputLayout.size() };
+    std::vector<D3D12_INPUT_ELEMENT_DESC> input_layout(Vertex::GetVSInputLayout());
+    psoDesc.InputLayout = { input_layout.data(), (UINT)input_layout.size() };
     psoDesc.pRootSignature = m_shader->m_root_signature.Get();
     psoDesc.VS = 
 	{ 
@@ -229,9 +205,17 @@ void BoxApp::SetMaterial()
 
 void BoxApp::SetGameObject()
 {
+    // world coord is Left hand coord
+    // x right; y up; z inside the screen
     m_chest_go = std::make_unique<ModelGameObject>(std::string("chest"));
     m_chest_go->SetMaterial(m_material.get());
     m_chest_go->SetMesh(m_mesh_manager.GetMesh("box"));
+    m_chest_go->SetGameObjectLocation(0, 0, 5);
+
+    m_camera = std::make_unique<CameraGameObject>(std::string("camera"));
+    m_camera->LookAt(Vector3::Zero, Vector3::UnitZ, Vector3::UnitY);
+    m_camera->SetLens(Math::DegreesToRadians(60), (float)mClientWidth/mClientHeight, 0.00001f, 10000.0f);
+    m_camera->UpdateViewMatrix();
 }
 
 void BoxApp::OnMouseDown(WPARAM btnState, int x, int y)
@@ -256,11 +240,11 @@ void BoxApp::OnMouseMove(WPARAM btnState, int x, int y)
         float dy = XMConvertToRadians(0.25f*static_cast<float>(y - mLastMousePos.y));
 
         // Update angles based on input to orbit camera around box.
-        mTheta += dx;
-        mPhi += dy;
+        mTheta -= dx;
+        mPhi -= dy;
 
         // Restrict the angle mPhi.
-        mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
+        // mPhi = MathHelper::Clamp(mPhi, 0.1f, MathHelper::Pi - 0.1f);
     }
     else if((btnState & MK_RBUTTON) != 0)
     {
