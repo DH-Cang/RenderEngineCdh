@@ -1,9 +1,6 @@
 #pragma once
-
-
 #include "Common/d3dApp.h"
 #include "Math/MathHelper.h"
-#include "Common/UploadBuffer.h"
 #include "D3DRHI/DescriptorCacheGPU.h"
 #include "D3DRHI/DescriptorManager.h"
 #include "D3DRHI/D3D12Buffer.h"
