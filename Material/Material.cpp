@@ -17,19 +17,9 @@ void Material::CreateCb(ID3D12Device *device)
     m_cb_per_object.release();
     m_mapped_data.resize(0);
 
-    // traverse all the variables and store them
-    auto cb_structure = m_shader->GetCbStructure("cbPerObject");
-    for(int i=0; i<cb_structure.size(); i++)
-    {
-        ConstantBufferAttribute& cb_var = cb_structure[i];
-        VariableAttribute material_var;
-        material_var.type = cb_var.type;
-        material_var.offset = cb_var.offset;
-        material_var.size = cb_var.size;
-        m_material_vars[cb_var.name] = material_var;
-
-        m_cb_size += cb_var.size;
-    }
+    // get cb reflection size
+    auto& cb_per_object_reflection = m_shader->GetCbReflection("cbPerObject");
+    m_cb_size = cb_per_object_reflection.GetSize();
 
     // create cb
     m_cb_per_object = std::make_unique<D3D12ConstantBuffer>(device, m_cb_size);
@@ -51,9 +41,10 @@ void Material::PassParametersToShader(ID3D12GraphicsCommandList *cmd_list, Descr
 
 void Material::SetParameter(const std::string &name, DirectX::XMFLOAT4X4 data)
 {
-    VariableAttribute var_attr = m_material_vars[name];
-    assert(var_attr.type == "float4x4");
-    memcpy(m_mapped_data.data() + var_attr.offset,
+    auto& cb_per_object_reflection = m_shader->GetCbReflection("cbPerObject");
+    auto metadata = cb_per_object_reflection.GetVarMetaData(name);
+    assert(metadata.type == "float4x4");
+    memcpy(m_mapped_data.data() + metadata.offset,
         &data,
         sizeof(data));
 }

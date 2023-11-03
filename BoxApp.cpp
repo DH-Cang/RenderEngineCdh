@@ -63,12 +63,6 @@ void BoxApp::Update(const GameTimer& gt)
 {
     Rotator rotate;
     m_chest_go->SetGameObjectRotation(Math::RadiansToDegrees(mPhi), 0, Math::RadiansToDegrees(mTheta));
-
-    // this matrix class is designed for postmultiplying : pos * view, thus it should pass a transposed ViewMatrix to GPU
-    Matrix worldmatrix = m_chest_go->GetGameObjectTransform().GetTransformMatrixLH();
-    Matrix viewmatrix = m_camera->GetViewMatrix();
-    Matrix projmatrix = m_camera->GetProjMatrix();
-    m_material->SetParameter("gWorldViewProj", (worldmatrix * viewmatrix * projmatrix).Transpose());
 }
 
 void BoxApp::Draw(const GameTimer& gt)
@@ -102,7 +96,7 @@ void BoxApp::Draw(const GameTimer& gt)
 	mCommandList->SetDescriptorHeaps(1, descriptorHeaps);
 
     // Draw
-    m_chest_go->Draw(mCommandList.Get(), m_descriptor_cache.get());
+    m_chest_go->Draw(m_camera.get(), mCommandList.Get(), m_descriptor_cache.get());
 	
     // Indicate a state transition on the resource usage.
 	mCommandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(CurrentBackBuffer(),

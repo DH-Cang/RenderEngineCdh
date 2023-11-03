@@ -106,13 +106,32 @@ struct ShaderInfo
 };
 
 
-struct ConstantBufferAttribute
+struct CbVariableMetaData
 {
-	std::string type;
-	std::string name;
 	unsigned int offset;
 	unsigned int size;
+	std::string type;
 };
+
+// varname -> var metadata
+class CbReflection
+{
+public:
+	CbReflection() = default;
+	~CbReflection() = default;
+
+	int GetSize() const;
+	CbVariableMetaData GetVarMetaData(std::string name) const;
+	void SetVarMetaData(std::string name, CbVariableMetaData data);
+
+private:
+	std::unordered_map<std::string, CbVariableMetaData> m_metadata_maps;
+};
+
+//typedef std::unordered_map<std::string, CbVariableMetaData> CbReflection; 
+
+typedef std::unordered_map<std::string, CbReflection> CbReflectionMaps;	// cbname -> cb_var_structure
+
 
 class Shader
 {
@@ -127,7 +146,7 @@ public:
 	bool SetParameter(std::string param_name, UnorderedAccessView* uav);
 	bool SetParameter(std::string param_name, const std::vector<UnorderedAccessView*>& uav_list);
 	void BindParameters(ID3D12GraphicsCommandList* cmd_list, DescriptorCacheGPU* descriptor_cache);
-	const std::vector<ConstantBufferAttribute>& GetCbStructure(const std::string& cb_name);
+	const CbReflection& GetCbReflection(const std::string& cb_name);
 
 private:
 	static Microsoft::WRL::ComPtr<ID3DBlob> CompileShader(const std::wstring& Filename, const D3D_SHADER_MACRO* Defines, const std::string& Entrypoint, const std::string& Target);
@@ -165,5 +184,5 @@ private:
 
 	int m_sampler_signature_bind_slot = -1;
 
-	std::unordered_map<std::string, std::vector<ConstantBufferAttribute>> m_cb_structure_map;
+	CbReflectionMaps m_cb_reflection_maps;
 };

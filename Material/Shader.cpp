@@ -209,7 +209,7 @@ void Shader::GetShaderParameters(ComPtr<ID3DBlob> blob, ShaderType shader_type)
             D3D12_SHADER_BUFFER_DESC cb_desc;
             cb->GetDesc(&cb_desc);
             auto num_vars = cb_desc.Variables;
-            std::vector<ConstantBufferAttribute> attributes(num_vars);
+            CbReflection cb_reflection;
             for(int j=0; j<num_vars; j++)
             {
                 auto var = cb->GetVariableByIndex(j);
@@ -218,12 +218,14 @@ void Shader::GetShaderParameters(ComPtr<ID3DBlob> blob, ShaderType shader_type)
                 var->GetDesc(&var_desc);
                 var->GetType()->GetDesc(&var_type_desc);
 
-                attributes[j].name = var_desc.Name;
-                attributes[j].offset = var_desc.StartOffset;
-                attributes[j].size = var_desc.Size;
-                attributes[j].type = var_type_desc.Name;
+                CbVariableMetaData var_meta_data;
+                var_meta_data.offset = var_desc.StartOffset;
+                var_meta_data.size = var_desc.Size;
+                var_meta_data.type = var_type_desc.Name;
+
+                cb_reflection.SetVarMetaData(var_desc.Name, var_meta_data);
             }
-            m_cb_structure_map[param.name] = attributes;
+            m_cb_reflection_maps[param.name] = std::move(cb_reflection);
 		}
 		else if (resource_type == D3D_SHADER_INPUT_TYPE::D3D_SIT_STRUCTURED
 			  || resource_type == D3D_SHADER_INPUT_TYPE::D3D_SIT_TEXTURE)
@@ -521,10 +523,10 @@ void Shader::BindParameters(ID3D12GraphicsCommandList* cmd_list, DescriptorCache
     // ClearBindings();
 }
 
-const std::vector<ConstantBufferAttribute> &Shader::GetCbStructure(const std::string &cb_name)
+const CbReflection& Shader::GetCbReflection(const std::string &cb_name)
 {
-    const auto& iter = m_cb_structure_map.find(cb_name);
-    assert(iter != m_cb_structure_map.end());
+    const auto& iter = m_cb_reflection_maps.find(cb_name);
+    assert(iter != m_cb_reflection_maps.end());
     return iter->second;
 }
 
@@ -558,4 +560,26 @@ void Shader::ClearBindings()
     {
         param.uav_list.clear();
     }
+}
+
+int CbReflection::GetSize() const
+{
+    int size = 0;
+    for(auto& iter = m_metadata_maps.begin(); iter != m_metadata_maps.end(); iter++)
+    {
+        size += iter->second.size;
+    }
+    return size;
+}
+
+CbVariableMetaData CbReflection::GetVarMetaData(std::string name) const
+{
+    auto& result = m_metadata_maps.find(name);
+    assert(result != m_metadata_maps.end());
+    return result->second;
+}
+
+void CbReflection::SetVarMetaData(std::string name, CbVariableMetaData data)
+{
+    m_metadata_maps[name] = data;
 }

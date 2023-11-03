@@ -6,7 +6,17 @@
 
 cbuffer cbPerObject : register(b0)
 {
-	float4x4 gWorldViewProj; 
+	float4x4 gWorldViewProj; // must set
+};
+
+cbuffer cbPerFrame : register(b1)
+{
+
+};
+
+cbuffer cbRarely : register(b2)
+{
+
 };
 
 // cbuffer cbPass

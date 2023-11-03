@@ -38,7 +38,7 @@ private:
         unsigned int size;
     };
     
-    std::unordered_map<std::string, VariableAttribute> m_material_vars;
+    //std::unordered_map<std::string, VariableAttribute> m_material_vars;
     std::unique_ptr<D3D12ConstantBuffer> m_cb_per_object = nullptr;
     Shader* m_shader = nullptr;
     unsigned int m_cb_size = 0;

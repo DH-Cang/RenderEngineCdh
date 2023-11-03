@@ -1,5 +1,6 @@
 #pragma once
 #include "GameObject.h"
+#include "CameraGameObject.h"
 #include "Mesh/Mesh.h"
 #include "Material/Material.h"
 
@@ -12,7 +13,7 @@ public:
 
     void SetMesh(Mesh* mesh) { m_mesh = mesh; }
     void SetMaterial(Material* material) { m_material = material; }
-    void Draw(ID3D12GraphicsCommandList* cmd_list, DescriptorCacheGPU *descriptor_cache);
+    void Draw(CameraGameObject* camera, ID3D12GraphicsCommandList* cmd_list, DescriptorCacheGPU *descriptor_cache);
 
 private:
     Mesh* m_mesh = nullptr;
